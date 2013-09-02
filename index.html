@@ -1,0 +1,156 @@
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript">
+function unformat_balance(amount,denomination) {//returns the amount of usats represented by the argument pair
+  if (denomination == "BTC") return amount*100000000000000;
+  else if (denomination == "MSat") return amount*1000000000000;
+  else if (denomination == "KSat") return amount*1000000000;
+  else if (denomination == "Satoshis") return amount*1000000;
+  else if (denomination == "mSat") return amount*1000;
+  else return amount;
+}
+function format_balance(usats) {//formats the amount of usats to be a bit easier to read
+  var value;
+  var denomination;
+  if (usats >= 100000000000000) {
+    value = usats / 100000000000000;
+    denomination = "BTC";
+  }
+  else if (usats >= 1000000000000) {
+    value = usats / 1000000000000;
+    denomination = "MSat";
+  }
+  else if (usats >= 1000000000) {
+    value = usats / 1000000000;
+    denomination = "KSat";
+  }
+  else if (usats >= 1000000) {
+    value = usats / 1000000;
+    denomination = "Satoshis";
+  }
+  else if (usats >= 1000) {
+    value = usats / 1000;
+    denomination = "mSat";
+  }
+  else {
+    value = usats;
+    denomination = "uSat";
+  }
+  return value + " " + denomination;
+}
+$(document).ready(function() {
+  alert(1);
+  $('#data_fee').html(format_balance($('#data_fee').html()));
+  $('#tip_fee').html(format_balance($('#tip_fee').html()));
+  $('#query_min_fee').html(format_balance($('#query_min_fee').html()));
+  $.ajaxSetup({ cache: false });
+  $('#address_input').keypress(function(e) {
+    var code = (e.keyCode ? e.keyCode : e.which);
+    if(code == 13) { //Enter keycode
+      
+    }
+  });
+  $('#generate_data_button').click(function() {
+    var data = $('#data_input').val();
+    var command = "data&" + encodeURIComponent(data);
+    $('#command_input').val(command);
+  });
+  $('#generate_tip_button').click(function() {
+    var to_address = $('#tip_to_address_input').val();
+    var amount = $('#tip_amount_input').val();
+    var denomination = $('#tip_denomination_input').val();
+    var data_id = $('#tip_data_id_input').val();
+    if (to_address == "") {
+      alert("No to-address specified");
+      return;
+    }
+    if (amount == "") {
+      alert("No amount specified");
+      return;
+    }
+    var command = "tip&" + to_address + "&" + unformat_balance(amount,denomination).toString() + "&" + data_id;
+    $('#command_input').val(command);
+  });
+  $('#generate_query_button').click(function() {
+    var query = $('#query_input').val();
+    var max_fee = $('#query_max_fee_input').val();
+    var denomination = $('#query_denomination_input').val();
+    var command = "query&" + encodeURIComponent(query) + "&" + unformat_balance(max_fee,denomination);
+    $('#command_input').val(command);
+  });
+  $('#send_command_button').click(function() {
+    address = $('#address_input').val();
+    if (address == "") {
+      alert("No id address specified");
+      return;
+    }
+    var command = encodeURIComponent($('#command_input').val());
+    if (command == "") {
+      alert("No command specified");
+      return;
+    }
+    var signed = encodeURIComponent($('#signed_command_input').val());
+    $('#server_response').val("[waiting for response...]");
+    $.post("command.php",{address : address , command : command , signed : signed})
+    .done(function(data) {
+      $('#server_response').val(data);
+    });
+  });
+});
+</script>
+<html>
+<head>
+</head>
+<body>
+<center>
+<br><br>
+Your Bitcoin Address:<br>
+<input type='text' id='address_input' size=45><br>
+<br>
+<table id='actions_table' border=1 width='100%'><tr width='100%'>
+<td width='33%' style='text-align:center'>
+<a style='font-size:24px'>Store Data</a>  (Fee: <a id='data_fee'>30000</a>)<br>
+<br>
+Data:<br><textarea id='data_input' rows="4" cols="40"></textarea><br>
+<input id='generate_data_button' type='button' value='Generate Store Data Command'>
+</td>
+<td width='33%' style='text-align:center'>
+<a style='font-size:24px'>Send Tip</a> (Fee: <a id='tip_fee'>30000</a>)<br>
+<br>
+Receiver's Bitcoin Address: <input id='tip_to_address_input' type='text'><br>
+Amount: <input id='tip_amount_input' type='text'>
+<select id='tip_denomination_input'>
+<option value="BTC">BTC</option>
+<option value="MSat">MSat</option>
+<option value="KSat">KSat</option>
+<option value="Satoshis">Satoshis</option>
+<option value="mSat">mSat</option>
+<option value="uSat">&#181;Sat</option>
+</select>
+<br>
+Data ID: <input id='tip_data_id_input' type='text'><br>
+<input id='generate_tip_button' type='button' value='Generate Tip Command'>
+</td>
+<td width='33%' style='text-align:center'>
+<a style='font-size:24px'>Query</a> (Min Fee: <a id='query_min_fee'>1000</a>)<br>
+Max fee: <input id='query_max_fee_input' type='text'>
+<select id='query_denomination_input'>
+<option value="BTC">BTC</option>
+<option value="MSat">MSat</option>
+<option value="KSat">KSat</option>
+<option value="Satoshis">Satoshis</option>
+<option option selected="selected" value="mSat">mSat</option>
+<option value="uSat">&#181;Sat</option>
+</select><br>
+Query:<br><textarea id='query_input' rows="4" cols="40"></textarea><br>
+<input id='generate_query_button' type='button' value='Generate Query Command'>
+</td>
+</tr></table>
+<div id ='command_area' width=100% style='text-align:center'>
+Command:<br><textarea id='command_input' rows="4" cols="40"></textarea><br>
+Signed Command:<br><textarea id='signed_command_input' rows="4" cols="40"></textarea><br>
+<input id='send_command_button' type='button' value='Send Command'><br>
+Server response:<br><textarea id='server_response' rows="4" cols="40"></textarea><br>
+</div>
+</center>
+</body>
+</html>
