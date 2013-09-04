@@ -22,17 +22,8 @@ function add_account($address, $usats) {
     mysql_query($query)or die("e".mysql_error());
 }
 
-function validate_address($bitcoin, $address) {
-    $validate_info = $bitcoin->validateaddress($address);
-    return ($validate_info['isvalid']);
-}
-
-function verify_message($bitcoin, $address, $signed, $message) {
-    try {
-        return($bitcoin->verifymessage($address, $signed, $message)==1);
-    } catch (Exception $e) {
-        return false;
-    }
+function verify_message($address, $signature, $message) {
+    isMessageSignatureValid($address, $signature, $message);
 }
 
 function add_funds($address, $usats) {
