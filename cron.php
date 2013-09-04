@@ -61,10 +61,10 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
   }
   echo "7(".$total_deposited.",".$input_addr.")";
   
-  $query = "INSERT INTO `processed_deposits` VALUES ('".$txid."')";
-  mysql_query($query)or die(mysql_error());
+  $query = "INSERT INTO `processed_deposits` VALUES ('" . $txid . "')";
+  mysql_query($query) or die(mysql_error());
 
-  add_funds($input_addr,satoshis_to_usats($total_deposited));
+  add_funds($input_addr, satoshis_to_usats($total_deposited));
   echo 8;
 }
 ?>
