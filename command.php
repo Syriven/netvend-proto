@@ -49,7 +49,7 @@ if (!verify_message($bitcoin, $address, $signed, $raw_command)) {
 $command = explode("&", $raw_command);
 
 if ($command[0] == "data") {
-    $data = $command[1];
+    $data = urldecode($command[1]);
   
     if (!deduct_funds($address, $data_fee)) {
         die("eNot enough funds");
