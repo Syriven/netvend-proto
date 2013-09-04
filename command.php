@@ -28,8 +28,8 @@ if (!isset($_REQUEST['signed'])) die("eSigned not defined.");
 
 
 $address = $_REQUEST['address'];
-$raw_command = urldecode($_REQUEST['command']);
-$signed = urldecode($_REQUEST['signed']);
+$raw_command = $_REQUEST['command'];
+$signed = $_REQUEST['signed'];
 
 if (!validate_address($bitcoin, $address)) {
     die("eInvalid id_address");
@@ -42,7 +42,7 @@ if (!($account_assoc = mysql_fetch_assoc($account_result))) {
     die("eNo account with that id_address found");
 }
 
-if (!verify_message($bitcoin,$address,$signed,$raw_command)) {
+if (!verify_message($bitcoin, $address, $signed, $raw_command)) {
     die("eCommand signature verify failed: ".$signed);
 }
 
