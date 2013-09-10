@@ -188,5 +188,5 @@ if ($command[0] == "data") {
     error("Command not recognized: " . $command[0]);
 }
 
-success(json_encode(array("command_id" => true, "command_response" => v)));
+success(array("command_id" => true, "command_response" => $return_value));
 ?>
