@@ -137,14 +137,9 @@ if ($command[0] == "data") {
     
     $num_rows = mysql_num_rows($result);
     $return_value = "";
-    $first = true;
+    $rows = Array();
     while ($row = mysql_fetch_row($result)) {
-        if (!$first) $return_value = $return_value . "&";
-        else $first = false;
-        for ($i=0; $i < sizeof($row); $i++) {
-            if ($i != 0) $return_value = $return_value . "/";
-            $return_value = $return_value . urlencode($row[$i]);
-        }
+        array_push($rows,$row);
     }
     mysql_close($link);
     
@@ -156,13 +151,13 @@ if ($command[0] == "data") {
             error("Not enough funds! Error point 2");
         }
         $charged = $total_fee;
-        $return_value = "s" . $num_rows . "&" . $return_value;
+        $return_value = Array("success" => true, "rows" => $rows);
     } else {
         if (!deduct_funds($address, $query_base_fee)) {
             error("Not enough funds! Error point 3");
         }
         $charged = $query_base_fee;
-        $return_value = "Fee (" . $total_fee . ") exceeds max_fee.";
+        $return_value = Array("success" => false, "response" => "eFee (" . $total_fee . ") exceeded max_fee.";
     }
 
     $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($raw_command) . "\", \"" . mysql_real_escape_string($signed) . "\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
@@ -188,5 +183,5 @@ if ($command[0] == "data") {
     error("Command not recognized: " . $command[0]);
 }
 
-success(array("command_id" => true, "command_response" => $return_value));
+success(array("command_id" => $command_id, "command_response" => $return_value));
 ?>
