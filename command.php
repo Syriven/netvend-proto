@@ -13,7 +13,7 @@ $address = $_REQUEST['address'];
 $raw_command = $_REQUEST['command'];
 $signed = $_REQUEST['signed'];
 
-if (!validate_address($bitcoin, $address)) {
+if (!validate_address($address)) {
     die("eInvalid id_address");
 }
 
@@ -24,7 +24,7 @@ if (!($account_assoc = mysql_fetch_assoc($account_result))) {
     die("eNo account with that id_address found");
 }
 
-if (!verify_message($bitcoin, $address, $signed, $raw_command)) {
+if (!verify_message($address, $signed, $raw_command)) {
     die("eCommand signature verify failed: ".$signed);
 }
 
@@ -96,7 +96,7 @@ if ($command[0] == "data") {
     $query = "SELECT balance FROM `accounts` WHERE address = '" . $address . "' AND balance >= " . ($max_fee) . " LIMIT 1";
     $result = mysql_query($query) or die("eBalance check error.");
     if (mysql_num_rows($result) == 0) die("eNot enough funds! Error point 1");
-    $query = $command[1];
+    $query = urldecode($command[1]);
     mysql_close($link);
     
     $link = mysql_connect("localhost", $database_select_username, $database_select_pass) or trigger_error("emysql_connect error");

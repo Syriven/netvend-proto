@@ -52,20 +52,6 @@ function validate_address($address) {
 		return false;
 	}
 
-	$signature = base64_decode($signature, true);
-	if ($signature === false) {
-		return false;
-	}
-
-	if (strlen($signature) != 65) {
-		return false;
-	}
-
-	$recoveryFlags = ord($signature[0]) - 27;
-	if ($recoveryFlags < 0 || $recoveryFlags > 7) {
-		return false;
-	}
-
 	return true;
 }
 

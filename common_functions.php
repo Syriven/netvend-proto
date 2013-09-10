@@ -23,7 +23,7 @@ function add_account($address, $usats) {
 }
 
 function verify_message($address, $signature, $message) {
-    isMessageSignatureValid($address, $signature, $message);
+    return isMessageSignatureValid($address, $signature, $message);
 }
 
 function add_funds($address, $usats) {
