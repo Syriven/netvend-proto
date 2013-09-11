@@ -14,29 +14,30 @@
 require_once("verifymessage.php"); // from https://github.com/scintill/php-bitcoin-signature-routines
 require_once("config.php");
 
-errormsgs = array(
-    "Address not defined.",
-    "Command not defined.",
-    "Signed not defined.",
+$errormsgs = array(
     "Invalid id_address.",
     "No account with that id_address found.",
     "Not enough funds.",
     "Signature already used.",
     "Not enough funds for max_fee.",
     "mysql_connect issue"
-    )
+    );
 
-function error(msg) {
-    if (is_numeric(msg)) {
-        msg = errormsgs[msg];
+function error($msg) {
+    if (is_numeric($msg)) {
+        $msg = errormsgs[$msg];
     }
-    die(json_encode(array("success" => false, "response" => msg)));
+    die(json_encode(array("success" => false, "response" => $msg)));
 }
 
 function success(msg) {
-    die(json_encode(array("success" => true, "response" => msg)));
+    die(json_encode(array("success" => true, "response" => $msg)));
 }
 
+private function runSQL($sql) {
+    return mysql_query($sql) or error($query . " --- " . mysql_error());
+}
+    
 function satoshis_to_usats($satoshi) {
     return $satoshi * 1000000;
 }
