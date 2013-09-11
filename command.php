@@ -8,10 +8,11 @@
  * Want to donate?
  * NetVend is a concept first described by minisat_maker on Reddit.
  * Syriven (1MphZghyHmmrzJUk316iHvZ55UthfHXR34, @Syriven) designed the first functional implementation of NetVend.
- * Bardi Harborow (1Bardi4eoUvJomBEtVoxPcP8VK26E3Ayxn, @BardiHarborow) wrote the first apis for NetVend.
+ * Bardi Harborow (1Bardi4eoUvJomBEtVoxPcP8VK26E3Ayxn, @BardiHarborow) wrote the first apis for NetVend and converted the sever to JSONRPC.
  */
 
 require_once("common.php");
+require_once("libs/jsonRPCServer.php");
 
 if (isset($_SERVER['HTTP_ORIGIN'])) {
     header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
@@ -26,6 +27,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
         header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
 }
 
+
+class Handler {
+    public function submitCommand($address, $command, $signedcommand) {
+        if (!validate_address($address)) {
+            return error(3);
+        }
+    }
+}
+
+$handler = new Handler();
+jsonRPCServer::handle($handler) or print "Blank/invalid request. See API docs.:;
+
+
+
+
+
+
 if (!isset($_REQUEST['address'])) error(0);
 if (!isset($_REQUEST['command'])) error(1);
 if (!isset($_REQUEST['signed'])) error(2);
@@ -34,9 +52,7 @@ $address = $_REQUEST['address'];
 $raw_command = $_REQUEST['command'];
 $signed = $_REQUEST['signed'];
 
-if (!validate_address($address)) {
-    error(3);
-}
+
 
 $query = "SELECT * FROM `accounts` WHERE address = \"" . mysql_real_escape_string($address) . "\"";
 $account_result = mysql_query($query) or error($query . " --- " . mysql_error());
