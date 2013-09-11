@@ -34,6 +34,10 @@ function success(msg) {
     die(json_encode(array("success" => true, "response" => $msg)));
 }
 
+private function runSQL($sql) {
+    return mysql_query($sql) or error($query . " --- " . mysql_error());
+}
+    
 function satoshis_to_usats($satoshi) {
     return $satoshi * 1000000;
 }
