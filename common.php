@@ -15,27 +15,23 @@ require_once("verifymessage.php"); // from https://github.com/scintill/php-bitco
 require_once("config.php");
 
 $errormsgs = array(
-    "Invalid id_address.",
-    "No account with that id_address found.",
+    "Invalid address.",
+    "No account with that address found.",
     "Not enough funds.",
     "Signature already used.",
     "Not enough funds for max_fee.",
-    "mysql_connect issue"
+    "mysql_connect issue."
     );
 
 function error($msg) {
     if (is_numeric($msg)) {
         $msg = errormsgs[$msg];
     }
-    die(json_encode(array("success" => false, "response" => $msg)));
+    return array("success" => false, "response" => $msg);
 }
 
-function success(msg) {
-    die(json_encode(array("success" => true, "response" => $msg)));
-}
-
-private function runSQL($sql) {
-    return mysql_query($sql) or error($query . " --- " . mysql_error());
+function success($msg) {
+    return array("success" => true, "response" => $msg);
 }
     
 function satoshis_to_usats($satoshi) {
