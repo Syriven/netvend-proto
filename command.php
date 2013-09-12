@@ -34,7 +34,7 @@ class Handler {
             return error(0);
         }
         $query = "SELECT * FROM `accounts` WHERE address = '" . mysql_real_escape_string($address) . "'";
-        $account_result = mysql_query($query)or return error("Query A error: " . mysql_error());
+        if (!($account_result = mysql_query($query))) return error("Query A error: " . mysql_error());
         if (!($account_assoc = mysql_fetch_assoc($account_result))) {
             return error(1);
         }
@@ -55,7 +55,7 @@ class Handler {
             $raw_command = json_encode($command);
 
             $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($raw_command) . "\", \"".mysql_real_escape_string($signed) ."\", \"" . $data_fee . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
-            mysql_query($query) or return error("Query B error: " . mysql_error());
+            if (!(mysql_query($query))) return error("Query B error: " . mysql_error());
             
             if (mysql_affected_rows() == 0) {
                 return error(3);
@@ -64,7 +64,7 @@ class Handler {
             $command_id = mysql_insert_id(); // Command ID
 
             $query = "INSERT INTO `data` (address, command_id, data) values(\"" . $address . "\", \"" . $command_id . "\", \"" . mysql_real_escape_string($data) . "\")";
-            mysql_query($query) or return error("Query C error: " . mysql_error());
+            if (!(mysql_query($query))) return error("Query C error: " . mysql_error());
 
             $return_value = mysql_insert_id(); // Data ID
 
@@ -85,14 +85,14 @@ class Handler {
 
             /* Everything seems in order. Insert tip and command data. */
             $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"".mysql_real_escape_string($raw_command) . "\", \"" . mysql_real_escape_string($signed) . "\", \"" . $tip_fee . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
-            mysql_query($query) or return error("Query D error: " . mysql_error());
+            if (!(mysql_query($query))) return error("Query D error: " . mysql_error());
             if (mysql_affected_rows() == 0) {
                 return error(3);
             }
             $command_id = mysql_insert_id(); // Command ID
 
             $query = "INSERT INTO `tips` (from_address, to_address, value, data_id, command_id) VALUES (\"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($to_address) . "\", " . $usats . ", " . $data_id . ", " . $command_id . ")";
-            mysql_query($query) or return error("Query E error: " . mysql_error());
+            if (!(mysql_query($query))) return error("Query E error: " . mysql_error());
 
             $return_value = mysql_insert_id(); // Tip ID
 
@@ -105,19 +105,19 @@ class Handler {
             }
             
             $query = "SELECT balance FROM `accounts` WHERE address = '" . $address . "' AND balance >= " . ($max_fee) . " LIMIT 1";
-            $result = mysql_query($query) or return error("Query F error: " . mysql_error());
+            if (!($result = mysql_query($query))) return error("Query F error: " . mysql_error());
             if (mysql_num_rows($result) == 0) {
                 return error(4);
             }
             $query = $command[1];
             mysql_close($link);
             
-            $link = mysql_connect("localhost", $database_select_username, $database_select_pass) or trigger_error("emysql_connect error");
-            mysql_select_db($database_name) or return error("Query G error: " . mysql_error());
+            if (!($link = mysql_connect("localhost", $database_select_username, $database_select_pass))) return error(5);
+            if (!(mysql_select_db($database_name))) return error("Query G error: " . mysql_error());
             
             /* Start Timed Statement. */
             $time = microtime(true);
-            $result = mysql_query($query) or return error(mysql_error() . " --- " . $query);//because this is an error with the USER's query, return something different than the other query error messages
+            if (!($result = mysql_query($query))) return error(mysql_error() . " --- " . $query);//because this is an error with the USER's query, return something different than the other query error messages
             $time_diff = microtime(true) - $time;
             /* End Timed Statement. */
             
@@ -128,8 +128,8 @@ class Handler {
             }
             mysql_close($link);
             
-            $link = mysql_connect("localhost", $database_insert_username, $database_insert_pass) or return error(5);
-            mysql_select_db($database_name) or error(mysql_error());
+            if (!($link = mysql_connect("localhost", $database_insert_username, $database_insert_pass))) return error(5);
+            if (!(mysql_select_db($database_name))) return error(mysql_error());
             $total_fee = $query_base_fee + ($query_fee_per_sec * $time_diff) + ($query_fee_per_byte * sizeof($return_value));
             if ($total_fee <= $max_fee) {
                 if (!deduct_funds($address, $total_fee)) {
@@ -142,11 +142,11 @@ class Handler {
                     return error("Not enough funds! Error point I");
                 }
                 $charged = $query_base_fee;
-                $return_value = Array("success" => false, "response" => "eFee (" . $total_fee . ") exceeded max_fee.";
+                $return_value = Array("success" => false, "response" => "eFee (" . $total_fee . ") exceeded max_fee.");
             }
 
             $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($raw_command) . "\", \"" . mysql_real_escape_string($signed) . "\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
-            mysql_query($query) or return error("Query J error: " . mysql_error());
+            if (!(mysql_query($query))) return error("Query J error: " . mysql_error());
             if (mysql_affected_rows() == 0) {
                 return error(3);
             }
@@ -177,5 +177,5 @@ class Handler {
 }
 
 $handler = new Handler();
-jsonRPCServer::handle($handler) or echo "Blank/invalid request. See API docs.";
+jsonRPCServer::handle($handler) or print "Blank/invalid request. See API docs.";
 ?>

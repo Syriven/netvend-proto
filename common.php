@@ -25,7 +25,7 @@ $errormsgs = array(
 
 function error($msg) {
     if (is_numeric($msg)) {
-        $msg = errormsgs[$msg];
+        $msg = $errormsgs[$msg];
     }
     return array("success" => false, "response" => $msg);
 }
