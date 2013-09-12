@@ -68,7 +68,8 @@ class Handler {
 
             $return_value = mysql_insert_id(); // Data ID
 
-        } elseif ($command[0] == "t") {//tip
+        }
+        elseif ($command[0] == "t") {//tip
             $to_address = $command[1];
             if (!validate_address($to_address)) {
                 return error(0);
@@ -95,7 +96,8 @@ class Handler {
 
             $return_value = mysql_insert_id(); // Tip ID
 
-        } elseif ($command[0] == "q") {//query
+        }
+        elseif ($command[0] == "q") {//query
             $max_fee = $command[2];
             
             if ($max_fee < $query_base_fee) {
@@ -150,7 +152,8 @@ class Handler {
             }
             $command_id = mysql_insert_id();
             
-        } elseif ($command[0] == "w") {//withdraw
+        }
+        elseif ($command[0] == "w") {//withdraw
             return error("Withdraw not yet supported.");
             $amount = $command[1];
             if ($amount == "all") {
@@ -162,7 +165,8 @@ class Handler {
             } else {
                 return error("Amount '" . $amount . "' not recognized");
             }
-        } else {
+        }
+        else {
             return error("Command not recognized: " . $command[0]);
         }
 
