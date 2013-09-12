@@ -130,7 +130,7 @@ class Handler {
             
             if (!($link = mysql_connect("localhost", $database_insert_username, $database_insert_pass))) return error(5);
             if (!(mysql_select_db($database_name))) return error(mysql_error());
-            $total_fee = $query_base_fee + ($query_fee_per_sec * $time_diff) + ($query_fee_per_byte * sizeof($return_value));
+            $total_fee = $query_base_fee + ($query_fee_per_sec * $time_diff) + ($query_fee_per_byte * sizeof(json_encode($rows)));
             if ($total_fee <= $max_fee) {
                 if (!deduct_funds($address, $total_fee)) {
                     return error("Not enough funds! Error point H");
