@@ -24,7 +24,15 @@ $errormsgs = array(
     );
 
 function error($msg) {
-    return $errormsgs[$msg];
+    if (is_numeric($msg)) {
+        $msg = $errormsgs[$msg];
+    }
+    
+    return array("success" => true, "response" => $msg);
+}
+
+function success($msg) {
+    return array("success" => true, "response" => $msg);
 }
     
 function satoshis_to_usats($satoshi) {
