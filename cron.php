@@ -59,14 +59,11 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
 
   $total_deposited = 0;
   for ($j=0; $j<sizeof($tx->out); $j++) {
-    echo 5;
     $addr = $tx->out[$j]->addr;
     if ($addr == $deposit_addr) {
       $total_deposited += $tx->out[$j]->value;
-      echo 6;
     }
   }
-  echo "7(" . $total_deposited . "," . $input_addr . ")";
   
   $query = "INSERT INTO `processed_deposits` VALUES ('" . $txid . "')";
   mysql_query($query) or die(mysql_error());
