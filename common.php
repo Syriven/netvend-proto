@@ -14,24 +14,12 @@
 require_once("verifymessage.php"); // from https://github.com/scintill/php-bitcoin-signature-routines
 require_once("config.php");
 
-$errormsgs = array(
-    "Invalid address.",
-    "No account with that address found.",
-    "Not enough funds.",
-    "Signature already used.",
-    "Not enough funds for max_fee.",
-    "mysql_connect issue."
-    );
-
-function error($msg) {
-    if (is_numeric($msg)) {
-        $msg = $errormsgs[$msg];
-    }
-    return array("success" => false, "response" => $msg);
+function error($return_val) {
+    die(json_encode(array(0,$return_val)));
 }
 
-function success($msg) {
-    return array("success" => true, "response" => $msg);
+function success($return_val) {
+    die(json_encode(array(1,$return_val)));
 }
     
 function satoshis_to_usats($satoshi) {
@@ -63,7 +51,12 @@ function add_account($address, $usats) {
 }
 
 function verify_message($address, $signature, $message) {
-    return isMessageSignatureValid($address, $signature, $message);
+    try {
+        return isMessageSignatureValid($address, $signature, $message);
+    }
+    catch (Exception $e) {
+        return false;
+    }
 }
 
 function add_funds($address, $usats) {

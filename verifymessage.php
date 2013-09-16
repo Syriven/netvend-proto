@@ -47,7 +47,12 @@ function validate_address($address) {
 	global $secp256k1_G;
 
 	// extract parameters
-	$address = base58check_decode($address);
+        try {
+		$address = base58check_decode($address);
+        }
+	catch (Exception $e) {
+		return false;
+        }
 	if (strlen($address) != 21 || $address[0] != "\x0") {
 		return false;
 	}
