@@ -53,12 +53,13 @@ if ($command[0] == "d") {//data
     if (!deduct_funds($address, $data_fee)) {
         error("f:not enough funds");
     }
+    $charged = $data_fee;
     
     /* Everything seems in order. Replace the data with "d" to save space in the commands table.*/
     $command[1] = "d";
     $raw_command = json_encode($command);
 
-    $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($raw_command) . "\", \"".mysql_real_escape_string($signed) ."\", \"" . $data_fee . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
+    $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"" . mysql_real_escape_string($raw_command) . "\", \"".mysql_real_escape_string($signed) ."\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
     if (!(mysql_query($query))) error("0:query B error: " . mysql_error());
     
     if (mysql_affected_rows() == 0) {
@@ -82,12 +83,13 @@ elseif ($command[0] == "t") {//tip
     if (!deduct_funds($address, $usats + $tip_fee)) {
         error("f:not enough funds");
     }
+    $charged = $tip_fee;
     
     add_funds($to_address,$usats);
     $data_id = $command[3];
 
     /* Everything seems in order. Insert tip and command data. */
-    $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"".mysql_real_escape_string($raw_command) . "\", \"" . mysql_real_escape_string($signed) . "\", \"" . $tip_fee . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
+    $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . mysql_real_escape_string($address) . "\", \"".mysql_real_escape_string($raw_command) . "\", \"" . mysql_real_escape_string($signed) . "\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . mysql_real_escape_string($signed) . "\")";
     if (!(mysql_query($query))) error("0:query D error: " . mysql_error());
     if (mysql_affected_rows() == 0) {
         error("4:sig '" . $signed . "' already used");
@@ -143,7 +145,7 @@ elseif ($command[0] == "q") {//query
         $return_value = Array("success" => true, "fee" => $charged, "rows" => $rows);
     } else {
         if (!deduct_funds($address, $max_fee)) {
-            error("0:faild query deduct_funds B");
+            error("0:failed query deduct_funds B");
         }
         $charged = $max_fee;
         $return_value = Array("success" => false, "fee" => $charged, "response" => "fee (" . $query_base_fee . " + " . $time_cost . " + " . $size_cost . " = " . $total_fee . ") exceeds max_fee.");
@@ -173,6 +175,6 @@ else {
     error("8:command not recognized: " . $command[0]);
 }
 
-$response = array("command_id" => $command_id, "command_response" => $return_value);
+$response = array("command_id" => $command_id, "charged" => $charged, "command_response" => $return_value);
 success($response);
 ?>
