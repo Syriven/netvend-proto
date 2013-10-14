@@ -1,29 +1,56 @@
 <?php
-/*!
- * config.php by @Syriven. Small help by @BardiHarborow. Part of the SocialNet\NetVend Project.
- *
- * Licensed under the CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
- * Get a copy at https://creativecommons.org/publicdomain/zero/1.0/
- *
- * Want to donate?
- * NetVend is a concept first described by minisat_maker on Reddit.
- * Syriven (1MphZghyHmmrzJUk316iHvZ55UthfHXR34, @Syriven) designed the first functional implementation of NetVend.
- * Bardi Harborow (1Bardi4eoUvJomBEtVoxPcP8VK26E3Ayxn, @BardiHarborow) wrote the first apis for NetVend and converted the sever to JSONRPC.
- */
+/**
+* config.php by @Syriven. Rewritten by @BardiHarborow. Part of the NetVend Project.
+*
+* Licensed under the CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+* Get a copy at https://creativecommons.org/publicdomain/zero/1.0
+* This code is in the public domain.
+*
+* Want to donate?
+* NetVend is a concept first described by minisat_maker on Reddit.
+* Syriven (1MphZghyHmmrzJUk316iHvZ55UthfHXR34) designed the first functional implementation of NetVend.
+* Bardi Harborow (1Bardi4eoUvJomBEtVoxPcP8VK26E3Ayxn) wrote the first apis for NetVend and rewrote the server to look pretty.
+*
+* @link         http://netvend.tk/api/
+* @access       public
+* @author       BardiHarborow <bardi.harborow@gmail.com> and Syriven
+* @version      v0.0.0.1
+* @package      netvend
+*/
 
-require("secret_values.php"); // $database_username, $rpcuser, etc.
+/**
+* Converts satoshis to uSats.
+*
+* @param  	float	$satoshi	The number of satoshis.
+* @return 	float	Number of uSats.
+* @access 	public
+*/
+function satoshis_to_usats($satoshi) {
+    return $satoshi * 1000000;
+}
 
-$link = mysql_connect("localhost", $database_insert_username, $database_insert_pass) or error("mysql_connect issue.");
-mysql_select_db($database_name) or error(msyql_error());
+/**
+* Converts BTC to uSats.
+*
+* @param  	float	$btc	The number of BTC.
+* @return 	float	Number of uSats.
+* @access 	public
+*/
+function btc_to_usats($btc) {
+    return $btc * 100000000000000;
+}
 
-/* Constants */
-$deposit_addr = "1wrHn3BTytLP1yFXx5VPUehSB3WyjQs9W";
-$tip_fee = satoshis_to_usats(0.03);
-$data_fee = satoshis_to_usats(0.03);
-$withdraw_fee = satoshis_to_usats(0.03);
-$query_base_fee = satoshis_to_usats(0.001);
-$query_fee_per_sec = satoshis_to_usats(0.01);
-$query_fee_per_byte = satoshis_to_usats(0.00001);
-$deposit_min_conf = 0; // Should be changed to a higher number (maybe just 1) before production release.
-$tx_fee_nsats = btc_to_usats(0.0005);
+include_once("secret_values.php");
+
+$mysqli_link = new mysqli("localhost", $database_insert_username, $database_insert_pass, $database_name);
+
+/* Change these to your liking. */
+define("FEE_DATA", satoshis_to_usats(0.03));
+define("FEE_TIP", satoshis_to_usats(0.03));
+define("FEE_QUERY_BASE", satoshis_to_usats(0.001));
+define("FEE_QUERY_TIME", satoshis_to_usats(0.01));
+define("FEE_QUERY_SIZE", satoshis_to_usats(0.00001));
+define("FEE_WITHDRAW", satoshis_to_usats(0.03));
+define("DEPOSIT_MIN_CONF", 0);
+define("FEE_TX", btc_to_usats(0.0005));
 ?>
