@@ -24,7 +24,7 @@
 * @package      netvend
 */
 
-include_once("config.php");
+include_once("common.php");
 
 /**
 * The CommandHandler Class.
@@ -64,6 +64,7 @@ class CommandHandler {
     * @access   private
     */
     private function addAccount($address, $uSats) {
+        global $mysqli_link;
         if ($uSats > 18446744073709551615 || $uSats < 0) {
             $this->handleError(0, "uSats must be between 0 and 18446744073709551615.");
         }
@@ -94,11 +95,12 @@ class CommandHandler {
     * @access 	private
     */
     private function getAccountAssoc($address) {
+        global $mysqli_link;
         $query = "SELECT * FROM `accounts` WHERE address = '" . $mysqli_link->real_escape_string($address) . "'";
         if (!($account_result = $mysqli_link->query($query))){
             $this->handleError(0, "Error fetching account details: " . $mysqli_link->error());
         }
-        if (!($account_assoc = $mysqli_link->fetch_assoc($account_result))) {
+        if (!($account_assoc = $account_result->fetch_assoc())) {
             $this->handleError("n", $address);
         }
         return $account_assoc;
@@ -112,12 +114,13 @@ class CommandHandler {
     * @access 	private
     */
     private function deductFunds($account_assoc, $uSats) {
+        global $mysqli_link;
         $query = "UPDATE `accounts` SET balance = balance - " . $uSats . " WHERE (address = '" . $account_assoc["address"] . "' AND balance >= " . $uSats .") LIMIT 1";
         if (!($mysqli_link->query($query))){
             $this->handleError(0, "Error deducting funds: " . $mysqli_link->error());
         }
-        if (!(mysql_affected_rows() == 1)) {
-            $this->handleError("f", array($uSats, $account["balance"]));
+        if (!($mysqli_link->affected_rows == 1)) {
+            $this->handleError("f", array($uSats, $account_assoc["balance"]));
         }
     }
     
@@ -129,6 +132,7 @@ class CommandHandler {
     * @access 	private
     */
     private function addFunds($address, $uSats) {
+        global $mysqli_link;
         /* Basic sanity checking. */
         if ($uSats > 18446744073709551615 || $uSats < 0) {
             $this->handleError(0, "uSats must be between 0 and 18446744073709551615.");
@@ -140,7 +144,7 @@ class CommandHandler {
             $this->handleError(0, "Error adding funds (1): " . $mysqli_link->error());
         }
         
-        if (mysql_affected_rows() == 1) {
+        if ($mysqli_link->affected_rows == 1) {
             return;
         }
 
@@ -173,7 +177,7 @@ class CommandHandler {
     */
     private function verifySignature($address, $signed, $raw_command) {
         if (!verify_message($address, $signed, $raw_command)) {
-            this->handleError("s", array($raw_command, $signed));
+            $this->handleError("s", array($raw_command, $signed));
         }
     }
     
@@ -187,15 +191,16 @@ class CommandHandler {
     * @access 	private
     */
     private function insertCommand($address, $raw_command, $signed, $charged) {
+        global $mysqli_link;
         $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($raw_command) . "\", \"".$mysqli_link->real_escape_string($signed) ."\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . $mysqli_link->real_escape_string($signed) . "\")";
         if (!($mysqli_link->query($query))) {
             $this->handleError(0, "Error inserting command: " . $mysqli_link->error());
         }
     
-        if ($mysqli_link->affected_rows() == 0) {
+        if ($mysqli_link->affected_rows == 0) {
             $this->handleError("e", $signed);
         }
-        return $mysql_insert->insert_id();
+        return $mysqli_link->insert_id;
     }
     
     /**
@@ -207,11 +212,12 @@ class CommandHandler {
     * @access 	private
     */
     private function insertData($address, $data, $command_id) {
+        global $mysqli_link;
         $query = "INSERT INTO `data` (address, command_id, data) values(\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($command_id) . "\", \"" . $mysqli_link->real_escape_string($data) . "\")";
         if (!($mysqli_link->query($query))) {
             $this->handleError(0, "Error inserting data: " . $mysqli_link->error());
         }
-        return $mysql_insert->insert_id();
+        return $mysqli_link->insert_id;
     }
     
     /**
@@ -225,6 +231,7 @@ class CommandHandler {
     * @access 	private
     */
     private function insertTip($address, $to_address, $uSats, $data_id, $command_id) {
+        global $mysqli_link;
         $query = "INSERT INTO `tips` (from_address, to_address, value, data_id, command_id) VALUES (\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($to_address) . "\", " . $mysqli_link->real_escape_string($uSats) . ", " . $mysqli_link->real_escape_string($data_id) . ", " . $mysqli_link->real_escape_string($command_id) . ")";
         if (!($mysqli_link->query($query))) {
             $this->handleError(0, "Error inserting tip: " . $mysqli_link->error());
@@ -242,6 +249,7 @@ class CommandHandler {
     * @access 	private
     */    
     private function handleCommand($address, $signed, $raw_command, $account_assoc) {
+        global $mysqli_link;
         $command = json_decode($raw_command);
         if ($command[0] == "d") {
             $data = $command[1];
@@ -276,46 +284,44 @@ class CommandHandler {
                 $this->handleError("m", FEE_QUERY_BASE);
             }
             
-            if ($account["balance"] < $max_fee) {
-                $this->handleError("f", array($max_fee, $account["balance"]));
+            if ($account_assoc["balance"] < $max_fee) {
+                $this->handleError("f", array($max_fee, $account_assoc["balance"]));
             }
             
             //we now have FEE_QUERY_BASE < $max_fee < $account["balance"]
             
             $query = $command[1];
             
-            $mysqli_link->close();
-            $mysqli_link = new mysqli("localhost", $database_select_username, $database_select_pass, $database_name);
+            $mysqli_select_link = new mysqli("localhost", DATABASE_SELECT_USERNAME, DATABASE_SELECT_PASS, DATABASE_NAME);
             /* Start Timed Statement. */
             $time = microtime(true);
-            if (!($result = $mysqli_link->query($query))) {
-                $this->handleError("q", $mysqli_link->error());
+            if (!($result = $mysqli_select_link->query($query))) {
+                $this->handleError("q", $mysqli_select_link->error());
             }
             $time_diff = microtime(true) - $time;
             /* End Timed Statement. */
         
-            $num_rows = $mysqli_link->num_rows($result);
+            $num_rows = $result->num_rows;
             $rows = Array();
-            while ($row = $mysqli_link->fetch_row($result)) {
+            while ($row = $result->fetch_row()) {
                 array_push($rows, $row);
             }
             
-            $mysqli_link->close();
-            $mysqli_link = new mysqli("localhost", $database_insert_username, $database_insert_pass, $database_name);
+            $mysqli_select_link->close();
             
             $time_cost = floor(FEE_QUERY_TIME * $time_diff);
             $size_cost = floor(FEE_QUERY_SIZE * sizeof(json_encode($rows)));
             $total_fee = FEE_QUERY_BASE + $time_cost + $size_cost;
             
             if ($total_fee <= $max_fee) {
-                deduct_funds($address, $total_fee);
+                $this->deductFunds($account_assoc, $total_fee);
                 $charged = $total_fee;
                 $command_response = array(true, $num_rows, $rows);
             }
             else {
-                deduct_funds($address, $max_fee);
+                $this->deductFunds($account_assoc, $max_fee);
                 $charged = $max_fee;
-                $command_response = array(false, array($query_base_fee, $time_cost, $size_cost, $total_fee);
+                $command_response = array(false, array($query_base_fee, $time_cost, $size_cost, $total_fee));
             }
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
@@ -324,7 +330,7 @@ class CommandHandler {
         } else {
             $this->handleError("c", $command[0]);
         }
-        $this->handleSuccess($command_id, $command_response);
+        $this->handleSuccess($command_id, $charged, $command_response);
     }
     
     /**

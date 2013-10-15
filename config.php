@@ -18,31 +18,9 @@
 * @package      netvend
 */
 
-/**
-* Converts satoshis to uSats.
-*
-* @param  	float	$satoshi	The number of satoshis.
-* @return 	float	Number of uSats.
-* @access 	public
-*/
-function satoshis_to_usats($satoshi) {
-    return $satoshi * 1000000;
-}
-
-/**
-* Converts BTC to uSats.
-*
-* @param  	float	$btc	The number of BTC.
-* @return 	float	Number of uSats.
-* @access 	public
-*/
-function btc_to_usats($btc) {
-    return $btc * 100000000000000;
-}
-
 include_once("secret_values.php");
 
-$mysqli_link = new mysqli("localhost", $database_insert_username, $database_insert_pass, $database_name);
+$mysqli_link = new mysqli("localhost", DATABASE_INSERT_USERNAME, DATABASE_INSERT_PASS, DATABASE_NAME);
 
 /* Change these to your liking. */
 define("FEE_DATA", satoshis_to_usats(0.03));
