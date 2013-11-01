@@ -42,7 +42,7 @@ class CommandHandler {
     * @access 	private
     */
     private function handleError($error_code, $error_msg) {
-        die(json_encode(array(false, $error_code, $error_msg)));
+        die(json_encode(array(0, $error_code, $error_msg)));
     }
 
     /**
@@ -53,7 +53,7 @@ class CommandHandler {
     * @access   private
     */
     private function handleSuccess($command_id, $charged, $command_response) {
-        die(json_encode(array(true, $command_id, $charged, $command_response)));
+        die(json_encode(array(1, $command_id, $charged, $command_response)));
     }
     
     /**
@@ -236,7 +236,7 @@ class CommandHandler {
         if (!($mysqli_link->query($query))) {
             $this->handleError(0, "Error inserting tip: " . $mysqli_link->error());
         }
-        return $mysqli_link->insert_id();
+        return $mysqli_link->insert_id;
     }
 
     /**
@@ -316,12 +316,12 @@ class CommandHandler {
             if ($total_fee <= $max_fee) {
                 $this->deductFunds($account_assoc, $total_fee);
                 $charged = $total_fee;
-                $command_response = array(true, $num_rows, $rows);
+                $command_response = array(1, $num_rows, $rows);
             }
             else {
                 $this->deductFunds($account_assoc, $max_fee);
                 $charged = $max_fee;
-                $command_response = array(false, array($query_base_fee, $time_cost, $size_cost, $total_fee));
+                $command_response = array(0, array($query_base_fee, $time_cost, $size_cost, $total_fee));
             }
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
@@ -342,7 +342,7 @@ class CommandHandler {
         if (isset($_SERVER['HTTP_ORIGIN'])) {
             header("Access-Control-Allow-Origin: *");
             header('Access-Control-Allow-Credentials: true');
-            header('Access-Control-Max-Age: 86400'); // Cache for 1 day
+            header('Access-Control-Max-Age: 25920000'); // Cache for 1 day
         }
         
         if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
