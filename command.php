@@ -1,7 +1,7 @@
 <?php
 /**
 * This is the script that handles incoming NetVend commands. NetVend is a concept first
-* described by minisat_maker on Reddit under the name "minisats". @Syriven developed
+* described by minisat_maker on Reddit under the name "minisat_maker". @Syriven developed
 * the first functional server. @BardiHarborow joined the development team in the
 * middle of 2013 and helped overhaul the code. He also developed the APIs. Documemtaion
 * is available on the website. Thanks for using NetVend.
