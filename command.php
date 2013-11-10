@@ -150,12 +150,12 @@ class CommandHandler {
 
         /* The top query failed! Is there an account? */
         $query = "SELECT balance FROM `accounts` WHERE (address = '" . $address . "')";
-        if (!($mysqli_link->query($query))){
+        if (!($result = $mysqli_link->query($query))){
             $this->handleError(0, "Error adding funds (2): " . $mysqli_link->error());
         }
-        if ($mysqli_link->num_rows($result) == 0) {
+        if ($result->num_rows == 0) {
             /* No account created. Make one with initial deposit. */
-            $this->add_account($address, $uSats);
+            $this->addAccount($address, $uSats);
             return;
         }
         
@@ -274,6 +274,8 @@ class CommandHandler {
             $this->deductFunds($account_assoc, $uSats + $charged);
             $this->addFunds($to_address, $uSats);
             $data_id = $command[3];
+            
+            $charged += $uSats;
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
             $command_response = $this->insertTip($address, $to_address, $uSats, $data_id, $command_id);
