@@ -1,0 +1,5 @@
+rename "data" table "posts"
+rework post fees
+rename "commands" table "history"
+add "deposit" and "withdraw" events to history table when appropriate
+rename query command?
