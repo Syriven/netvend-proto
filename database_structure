@@ -1,0 +1,86 @@
+--
+-- Database: `netvend`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `accounts`
+--
+
+CREATE TABLE IF NOT EXISTS `accounts` (
+  `address` varchar(34) NOT NULL,
+  `balance` bigint(20) NOT NULL,
+  PRIMARY KEY (`address`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `commands`
+--
+
+CREATE TABLE IF NOT EXISTS `commands` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `address` char(34) NOT NULL,
+  `command` varchar(5000) NOT NULL,
+  `signed` varchar(5000) NOT NULL,
+  `fee` int(10) unsigned NOT NULL,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `address` (`address`),
+  KEY `ts` (`ts`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=18 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `data`
+--
+
+CREATE TABLE IF NOT EXISTS `data` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `address` char(34) NOT NULL,
+  `data` text NOT NULL,
+  `command_id` int(10) unsigned NOT NULL,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `address` (`address`),
+  KEY `ts` (`ts`),
+  KEY `command_id` (`command_id`),
+  FULLTEXT KEY `data` (`data`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=6 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `processed_deposits`
+--
+
+CREATE TABLE IF NOT EXISTS `processed_deposits` (
+  `txid` char(64) NOT NULL,
+  PRIMARY KEY (`txid`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tips`
+--
+
+CREATE TABLE IF NOT EXISTS `tips` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `from_address` char(34) NOT NULL,
+  `to_address` char(34) NOT NULL,
+  `value` bigint(20) unsigned NOT NULL,
+  `data_id` int(10) unsigned NOT NULL,
+  `command_id` int(10) unsigned NOT NULL,
+  `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `from` (`from_address`),
+  KEY `to` (`to_address`),
+  KEY `value` (`value`),
+  KEY `data_id` (`data_id`),
+  KEY `command_id` (`command_id`),
+  KEY `ts` (`ts`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=5 ;

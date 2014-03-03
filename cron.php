@@ -52,8 +52,8 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
 
   $txid = $tx->hash;
   $query = "SELECT txid FROM `processed_deposits` WHERE `txid` = '" . $txid . "'";
-  $result = mysql_query($query) or die(mysql_error());
-  if (mysql_num_rows($result) > 0) {
+  $result = $mysqli_link->query($query) or die(mysql_error());
+  if ($result->num_rows > 0) {
     continue; //Already processed this deposit.
   }
 
@@ -65,8 +65,10 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
     }
   }
   
-  $query = "INSERT INTO `processed_deposits` VALUES ('" . $txid . "')";
-  mysql_query($query) or die(mysql_error());
+  $query = "INSERT INTO `processed_deposits` VALUES ('".$txid."')";
+  $mysqli_link->query($query) or die(mysql_error());
+  $query = "INSERT INTO `commands` (address, command) VALUES ('-admin', 'deposit&".$txid."')";
+  $mysqli_link->query($query) or die(mysql_error());
 
   add_funds($input_addr, satoshis_to_usats($total_deposited));
 }

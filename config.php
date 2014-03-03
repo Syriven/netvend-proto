@@ -20,6 +20,8 @@
 
 include_once("secret_values.php");
 
+$deposit_addr = "1NT9oSHNvCb5adspW8G4DKGxQporSbJaeP";
+
 $mysqli_link = new mysqli("localhost", DATABASE_INSERT_USERNAME, DATABASE_INSERT_PASS, DATABASE_NAME);
 
 /* Change these to your liking. */
