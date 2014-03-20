@@ -35,153 +35,6 @@ include_once("common.php");
 */
 class CommandHandler {
     /**
-    * Handles error messages.
-    *
-    * @param  	float	$error_code	Machine readable error code. See docs.
-    * @param  	string	$error_msg	Human readable error message. This can be displayed to the user if wanted.
-    * @access 	private
-    */
-    private function handleError($error_code, $error_msg) {
-        die(json_encode(array(0, $error_code, $error_msg)));
-    }
-
-    /**
-    * Handles response to user.
-    *
-    * @param    int     $command_id         ID of the command.
-    * @param    mixed   $command_response   Command Reponse.
-    * @access   private
-    */
-    private function handleSuccess($command_id, $charged, $command_response) {
-        die(json_encode(array(1, $command_id, $charged, $command_response)));
-    }
-    
-    /**
-    * Creates a user account for $address with the balance of $uSats.
-    *
-    * @param    string  $address    ID of the command.
-    * @param    mixed   $uSats      Balance of new account.
-    * @access   private
-    */
-    private function addAccount($address, $uSats) {
-        global $mysqli_link;
-        if ($uSats > 18446744073709551615 || $uSats < 0) {
-            $this->handleError(0, "uSats must be between 0 and 18446744073709551615.");
-        }
-        
-        $query = "INSERT INTO `accounts` (address,balance) VALUES ('" . $address . "', '" . $uSats . "')";
-        if (!($mysqli_link->query($query))){
-            $this->handleError(0, "Error creating account: " . $mysqli_link->error());
-        }
-    }
-    
-    /**
-    * Validates bitcoin addresses. Calls handleError if address is invalid.
-    *
-    * @param    string   $address   The address.
-    * @access   private
-    */
-    private function validateAddress($address) {
-        if (!validate_address($address)) {
-            $this->handleError("a", $address);
-        }
-    }
-    
-    /**
-    * Fetches the account row from the SQL database. Calls handleError if account is not found.
-    *
-    * @param  	string	$address	The bitcoin address.
-    * @return 	array	Associative array for the account row returned by MySQL. 
-    * @access 	private
-    */
-    private function getAccountAssoc($address) {
-        global $mysqli_link;
-        $query = "SELECT * FROM `accounts` WHERE address = '" . $mysqli_link->real_escape_string($address) . "'";
-        if (!($account_result = $mysqli_link->query($query))){
-            $this->handleError(0, "Error fetching account details: " . $mysqli_link->error());
-        }
-        if (!($account_assoc = $account_result->fetch_assoc())) {
-            $this->handleError("n", $address);
-        }
-        return $account_assoc;
-    }
-    
-    /**
-    * Deducts funds ($uSats) from account ($account).
-    *
-    * @param  	string	$address    The bitcoin address.
-    * @param  	string	$uSats      The amount.
-    * @access 	private
-    */
-    private function deductFunds($account_assoc, $uSats) {
-        global $mysqli_link;
-        $query = "UPDATE `accounts` SET balance = balance - " . $uSats . " WHERE (address = '" . $account_assoc["address"] . "' AND balance >= " . $uSats .") LIMIT 1";
-        if (!($mysqli_link->query($query))){
-            $this->handleError(0, "Error deducting funds: " . $mysqli_link->error());
-        }
-        if (!($mysqli_link->affected_rows == 1)) {
-            $this->handleError("f", array($uSats, $account_assoc["balance"]));
-        }
-    }
-    
-    /**
-    * Adds funds ($uSats) to account ($account).
-    *
-    * @param  	string	$address    The bitcoin address.
-    * @param  	string	$uSats      The amount.
-    * @access 	private
-    */
-    private function addFunds($address, $uSats) {
-        global $mysqli_link;
-        /* Basic sanity checking. */
-        if ($uSats > 18446744073709551615 || $uSats < 0) {
-            $this->handleError(0, "uSats must be between 0 and 18446744073709551615.");
-        }
-
-        /* Most traffic will pass this test. ie. Balance is less than max and account exists. */
-        $query = "UPDATE `accounts` SET balance = balance + " . $uSats . " WHERE (address = '".$address."' AND balance <= 18446744073709551615 - ".$uSats.") LIMIT 1";//18446744073709551615 is the max value of the unsigned BIGINT type for sql
-        if (!($mysqli_link->query($query))){
-            $this->handleError(0, "Error adding funds (1): " . $mysqli_link->error());
-        }
-        
-        if ($mysqli_link->affected_rows == 1) {
-            return;
-        }
-
-        /* The top query failed! Is there an account? */
-        $query = "SELECT balance FROM `accounts` WHERE (address = '" . $address . "')";
-        if (!($result = $mysqli_link->query($query))){
-            $this->handleError(0, "Error adding funds (2): " . $mysqli_link->error());
-        }
-        if ($result->num_rows == 0) {
-            /* No account created. Make one with initial deposit. */
-            $this->addAccount($address, $uSats);
-            return;
-        }
-        
-        /* Wow, the account has too much money! High Rolla! */
-        $query = "UPDATE `accounts` SET balance = 18446744073709551615 WHERE address = '" . $address . "' LIMIT 1";
-        if (!($mysqli_link->query($query))){
-            $this->handleError(0, "Error adding funds (3): " . $mysqli_link->error());
-        }
-        /* The hidden server will sort out the difference. */
-    }
-    
-    /**
-    * Verify a bitcoin message.
-    *
-    * @param  	string	$address        The bitcoin address.
-    * @param  	string	$signed         The signature.
-    * @param  	string	$raw_command    The signed message.
-    * @access 	private
-    */
-    private function verifySignature($address, $signed, $raw_command) {
-        if (!verify_message($address, $signed, $raw_command)) {
-            $this->handleError("s", array($raw_command, $signed));
-        }
-    }
-    
-    /**
     * Insert command into database. Calls handleError if signature already exists in database.
     *
     * @param  	string	$address        The bitcoin address.
@@ -192,30 +45,30 @@ class CommandHandler {
     */
     private function insertCommand($address, $raw_command, $signed, $charged) {
         global $mysqli_link;
-        $query = "INSERT INTO `commands` (address, command, signed, fee) SELECT \"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($raw_command) . "\", \"".$mysqli_link->real_escape_string($signed) ."\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `commands` WHERE signed = \"" . $mysqli_link->real_escape_string($signed) . "\")";
+        $query = "INSERT INTO `history` (address, command, signed, fee) SELECT \"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($raw_command) . "\", \"".$mysqli_link->real_escape_string($signed) ."\", \"" . $charged . "\" FROM dual WHERE NOT EXISTS (SELECT * FROM `history` WHERE signed = \"" . $mysqli_link->real_escape_string($signed) . "\")";
         if (!($mysqli_link->query($query))) {
-            $this->handleError(0, "Error inserting command: " . $mysqli_link->error());
+            handleError(0, "Error inserting command: " . $mysqli_link->error());
         }
     
         if ($mysqli_link->affected_rows == 0) {
-            $this->handleError("e", $signed);
+            handleError("e", $signed);
         }
         return $mysqli_link->insert_id;
     }
     
     /**
-    * Insert data command into database.
+    * Insert post command into database.
     *
     * @param  	string	$address        The bitcoin address.
     * @param  	int 	$command_id     The command id.
-    * @param  	string	$data           The data.
+    * @param  	string	$post           The post.
     * @access 	private
     */
-    private function insertData($address, $data, $command_id) {
+    private function insertPost($address, $post, $command_id) {
         global $mysqli_link;
-        $query = "INSERT INTO `data` (address, command_id, data) values(\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($command_id) . "\", \"" . $mysqli_link->real_escape_string($data) . "\")";
+        $query = "INSERT INTO `posts` (address, history_id, data) values(\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($command_id) . "\", \"" . $mysqli_link->real_escape_string($post) . "\")";
         if (!($mysqli_link->query($query))) {
-            $this->handleError(0, "Error inserting data: " . $mysqli_link->error());
+            handleError(0, "Error inserting post: " . $mysqli_link->error);
         }
         return $mysqli_link->insert_id;
     }
@@ -226,15 +79,15 @@ class CommandHandler {
     * @param  	string	$address        The from bitcoin address.
     * @param  	string	$address        The to bitcoin address.
     * @param  	int	    $uSats          The tipped amount in uSats.
-    * @param  	int 	$data_id        The data id.
+    * @param  	int 	$post_id        The post id.
     * @param  	int 	$command_id     The command id.
     * @access 	private
     */
-    private function insertTip($address, $to_address, $uSats, $data_id, $command_id) {
+    private function insertTip($address, $to_address, $uSats, $post_id, $command_id) {
         global $mysqli_link;
-        $query = "INSERT INTO `tips` (from_address, to_address, value, data_id, command_id) VALUES (\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($to_address) . "\", " . $mysqli_link->real_escape_string($uSats) . ", " . $mysqli_link->real_escape_string($data_id) . ", " . $mysqli_link->real_escape_string($command_id) . ")";
+        $query = "INSERT INTO `tips` (from_address, to_address, value, post_id, history_id) VALUES (\"" . $mysqli_link->real_escape_string($address) . "\", \"" . $mysqli_link->real_escape_string($to_address) . "\", " . $mysqli_link->real_escape_string($uSats) . ", " . $mysqli_link->real_escape_string($post_id) . ", " . $mysqli_link->real_escape_string($command_id) . ")";
         if (!($mysqli_link->query($query))) {
-            $this->handleError(0, "Error inserting tip: " . $mysqli_link->error());
+            handleError(0, "Error inserting tip: " . $mysqli_link->error());
         }
         return $mysqli_link->insert_id;
     }
@@ -243,70 +96,78 @@ class CommandHandler {
     * Handle command, does all the heavy lifting.
     *
     * @param    string	$address        The bitcoin address.
-    * @param  	int	    $signed         The signature.
-    * @param  	int 	$raw_command    The data id.
+    * @param  	string	$signed         The signature.
+    * @param  	int 	$raw_command    The post id.
     * @param  	int 	$account        Account row retruned by getAccount.
     * @access 	private
     */    
     private function handleCommand($address, $signed, $raw_command, $account_assoc) {
         global $mysqli_link;
         $command = json_decode($raw_command);
-        if ($command[0] == "d") {
-            $data = $command[1];
+        if ($command[0] == "p") {
+            $post = $command[1];
             
-            $charged = FEE_DATA;
-            $this->deductFunds($account_assoc,$charged);
+            $charged = FEE_POST;
+            deductFunds($account_assoc,$charged);
             
-            //replace the data with "d" to save space in commands table:
+            //replace the data with "d" to save space in history table:
             $command[1] = "d";
             $raw_command = json_encode($command);
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
-            $command_response = $this->insertData($address, $data, $command_id);
+            $command_response = $this->insertPost($address, $post, $command_id);
             
         } elseif ($command[0] == "t") {
             $to_address = $command[1];
-            $this->validateAddress($to_address);
+            validateAddress($to_address);
             
             $charged = FEE_TIP;
             
             $uSats = abs((int) $command[2]);
-            $this->deductFunds($account_assoc, $uSats + $charged);
-            $this->addFunds($to_address, $uSats);
-            $data_id = $command[3];
+            deductFunds($account_assoc, $uSats + $charged);
+            addFunds($to_address, $uSats);
+            $post_id = $command[3];
             
             $charged += $uSats;
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
-            $command_response = $this->insertTip($address, $to_address, $uSats, $data_id, $command_id);
+            $command_response = $this->insertTip($address, $to_address, $uSats, $post_id, $command_id);
         } elseif ($command[0] == "q") {
             $max_fee = $command[2];
             
             if ($max_fee < FEE_QUERY_BASE) {
-                $this->handleError("m", FEE_QUERY_BASE);
+                handleError("m", FEE_QUERY_BASE);
             }
             
             if ($account_assoc["balance"] < $max_fee) {
-                $this->handleError("f", array($max_fee, $account_assoc["balance"]));
+                handleError("f", array($max_fee, $account_assoc["balance"]));
             }
             
             //we now have FEE_QUERY_BASE < $max_fee < $account["balance"]
             
             $query = $command[1];
+            if ($query == "") {
+            	handleError("r","empty query");
+            }
             
             $mysqli_select_link = new mysqli("localhost", DATABASE_SELECT_USERNAME, DATABASE_SELECT_PASS, DATABASE_NAME);
             /* Start Timed Statement. */
             $time = microtime(true);
             if (!($result = $mysqli_select_link->query($query))) {
-                $this->handleError("q", $mysqli_select_link->error());
+                handleError("q", $mysqli_select_link->error);
             }
             $time_diff = microtime(true) - $time;
             /* End Timed Statement. */
-        
+            
             $num_rows = $result->num_rows;
             $rows = Array();
             while ($row = $result->fetch_row()) {
                 array_push($rows, $row);
+            }
+            $field_types = Array();
+            while ($field = $result->fetch_field()) {
+            	$orgname = $field->orgname;
+            	array_push($field_types, $orgname);
             }
             
             $mysqli_select_link->close();
@@ -316,23 +177,29 @@ class CommandHandler {
             $total_fee = FEE_QUERY_BASE + $time_cost + $size_cost;
             
             if ($total_fee <= $max_fee) {
-                $this->deductFunds($account_assoc, $total_fee);
+                deductFunds($account_assoc, $total_fee);
                 $charged = $total_fee;
-                $command_response = array(1, $num_rows, $rows);
+                $command_response = array(1, $num_rows, $rows, $field_types);
             }
             else {
-                $this->deductFunds($account_assoc, $max_fee);
+                deductFunds($account_assoc, $max_fee);
                 $charged = $max_fee;
                 $command_response = array(0, array($query_base_fee, $time_cost, $size_cost, $total_fee));
             }
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
         } elseif ($command[0] == "w") {
-            $this->handleError(0, "Withdrawal not supported yet.");
+            $uSats = abs((int) $command[1]);
+            deductFunds($account_assoc, $uSats);
+            
+            $charged = 0;
+            
+            $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
+            $command_response = 1;
         } else {
-            $this->handleError("c", $command[0]);
+            handleError("c", $command[0]);
         }
-        $this->handleSuccess($command_id, $charged, $command_response);
+        handleSuccess($command_id, $charged, $command_response);
     }
     
     /**
@@ -354,17 +221,17 @@ class CommandHandler {
                 header("Access-Control-Allow-Headers: {$_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS']}");
         }
         
-        if (!isset($_REQUEST["address"])) $this->handleError("r", "address");
-        if (!isset($_REQUEST["command"])) $this->handleError("r", "command");
-        if (!isset($_REQUEST["signed"])) $this->handleError("r", "signed");
+        if (!isset($_REQUEST["address"])) handleError("r", "address");
+        if (!isset($_REQUEST["command"])) handleError("r", "command");
+        if (!isset($_REQUEST["signed"])) handleError("r", "signed");
         
         $address = $_REQUEST['address'];
         $raw_command = $_REQUEST['command'];
         $signed = $_REQUEST['signed'];
 
-        $this->validateAddress($address);
-        $account_assoc = $this->getAccountAssoc($address);
-        $this->verifySignature($address, $signed, $raw_command);
+        validateAddress($address);
+        $account_assoc = getAccountAssoc($address);
+        verifySignature($address, $signed, $raw_command);
         $this->handleCommand($address, $signed, $raw_command, $account_assoc);
     }
 }

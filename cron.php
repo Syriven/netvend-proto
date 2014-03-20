@@ -38,17 +38,25 @@ function get_address_info($address, $debug = false) {
 
 $addr_info = get_address_info($deposit_addr);
 
+$num_processed = 0;
+
+echo sizeof($addr_info->txs)."<br>";
+
 for ($i=0; $i < sizeof($addr_info->txs); $i++) {
+  echo "<br>";
   $tx = $addr_info->txs[$i];
 
   if (!isset($tx->block_height)) {
-    continue; // Must wait for at least one confirmation.
+    echo "INSECURE; should wait for at least one confirmation";
+    #continue; // Must wait for at least one confirmation.
   }
+  echo 1;
 
   $input_addr = $tx->inputs[0]->prev_out->addr;
   if ($input_addr == $deposit_addr) {
     continue; //Ignore; This is a transaction sent out FROM the deposit address.
   }
+  echo 2;
 
   $txid = $tx->hash;
   $query = "SELECT txid FROM `processed_deposits` WHERE `txid` = '" . $txid . "'";
@@ -56,6 +64,7 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
   if ($result->num_rows > 0) {
     continue; //Already processed this deposit.
   }
+  echo 3;
 
   $total_deposited = 0;
   for ($j=0; $j<sizeof($tx->out); $j++) {
@@ -64,14 +73,19 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
       $total_deposited += $tx->out[$j]->value;
     }
   }
+  echo 4;
   
   $query = "INSERT INTO `processed_deposits` VALUES ('".$txid."')";
-  $mysqli_link->query($query) or die(mysql_error());
-  $query = "INSERT INTO `commands` (address, command) VALUES ('-admin', 'deposit&".$txid."')";
-  $mysqli_link->query($query) or die(mysql_error());
+  $mysqli_link->query($query) or die($mysqli->error());
+  $query = "INSERT INTO `history` (address, command) VALUES ('-admin', '[\"d\",\"".$txid."\"]')";
+  $mysqli_link->query($query) or die($mysqli->error());
 
-  add_funds($input_addr, satoshis_to_usats($total_deposited));
+  addFunds($input_addr, satoshis_to_usats($total_deposited));
+  $num_processed++;
+  echo 5;
 }
 
-echo "*ok*";
+echo "<br>";
+
+echo $num_processed . " deposits processed.";
 ?>
