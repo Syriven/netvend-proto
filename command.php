@@ -107,7 +107,9 @@ class CommandHandler {
         if ($command[0] == "p") {
             $post = $command[1];
             
-            $charged = FEE_POST;
+            $charged = FEE_POST_BASE;
+            $charged += strlen($post)*FEE_POST_SIZE;
+            
             deductFunds($account_assoc,$charged);
             
             //replace the data with "d" to save space in history table:
