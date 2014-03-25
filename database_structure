@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Mar 20, 2014 at 11:41 AM
+-- Generation Time: Mar 24, 2014 at 04:20 AM
 -- Server version: 5.5.33
 -- PHP Version: 5.3.27
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `history` (
   `address` char(34) NOT NULL,
   `command` varchar(5000) NOT NULL,
   `signed` varchar(5000) NOT NULL,
-  `fee` int(10) unsigned NOT NULL,
+  `fee` bigint(20) unsigned NOT NULL,
   `ts` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`history_id`),
   KEY `address` (`address`),

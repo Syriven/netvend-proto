@@ -1,7 +1,7 @@
 <?php
 include_once("secret_values.php");
 
-$deposit_addr = "16MzZwcGJPSNCa1kW7xm2RC1bSQTbEa7Nn";
+$deposit_addr = "1GiHC8zWqst5dZCkYpwStEDfyyr8kFPWyU";
 
 $mysqli_link = new mysqli("localhost", DATABASE_INSERT_USERNAME, DATABASE_INSERT_PASS, DATABASE_NAME);
 

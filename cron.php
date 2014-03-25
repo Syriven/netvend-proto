@@ -11,7 +11,7 @@
  * Bardi Harborow (1Bardi4eoUvJomBEtVoxPcP8VK26E3Ayxn, @BardiHarborow) wrote the first apis for NetVend and converted the sever to JSONRPC.
  */
 
-include("common.php");
+include("/var/www/html/common.php");
 
 function get_address_info($address, $debug = false) {
   $url = 'http://blockchain.info/address/' . $address . '?format=json';
