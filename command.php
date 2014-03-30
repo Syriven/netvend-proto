@@ -110,7 +110,7 @@ class CommandHandler {
             $charged = FEE_POST_BASE;
             $charged += strlen($post)*FEE_POST_SIZE;
             
-            deductFunds($account_assoc, $charged);
+            deductFunds($account_assoc,$charged);
             
             //replace the data with "d" to save space in history table:
             $command[1] = "d";
@@ -129,6 +129,8 @@ class CommandHandler {
             deductFunds($account_assoc, $uSats + $charged);
             addFunds($to_address, $uSats);
             $post_id = $command[3];
+            
+            $charged += $uSats;
             
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
             $command_response = $this->insertTip($address, $to_address, $uSats, $post_id, $command_id);
