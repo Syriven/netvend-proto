@@ -12,7 +12,5 @@ define("FEE_POST_SIZE", satoshis_to_usats(0.0001));
 define("FEE_QUERY_BASE", satoshis_to_usats(0.001));
 define("FEE_QUERY_TIME", satoshis_to_usats(0.01));
 define("FEE_QUERY_SIZE", satoshis_to_usats(0.000001));
-define("FEE_WITHDRAW", satoshis_to_usats(0.03));
 define("DEPOSIT_MIN_CONF", 0);
-define("FEE_TX", btc_to_usats(0.0005));
 ?>
