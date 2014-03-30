@@ -130,8 +130,6 @@ class CommandHandler {
             addFunds($to_address, $uSats);
             $post_id = $command[3];
             
-            $charged += $uSats;
-            
             $command_id = $this->insertCommand($address, $raw_command, $signed, $charged);
             $command_response = $this->insertTip($address, $to_address, $uSats, $post_id, $command_id);
         } elseif ($command[0] == "q") {
