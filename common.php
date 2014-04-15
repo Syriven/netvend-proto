@@ -84,6 +84,9 @@ function deductFunds($account_assoc, $uSats) {
 }
 
 function addFunds($address, $uSats) {
+    if ($uSats == 0) {
+        return;
+    }
     global $mysqli_link;
     /* Basic sanity checking. */
     if ($uSats > 18446744073709551615 || $uSats < 0) {
