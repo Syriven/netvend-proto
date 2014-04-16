@@ -19,7 +19,7 @@ function satoshis_to_usats($satoshi) {
 }
 
 function usats_to_satoshis($msat) {
-    return $nsat / 1000000;
+    return $msat / 1000000;
 }
 
 function usats_floored_to_satoshi($usats) {
