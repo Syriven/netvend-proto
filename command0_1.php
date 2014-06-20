@@ -226,6 +226,11 @@ class CommandHandler {
             
             deductFunds($account_assoc, $total_sent + $charged);
             
+            // Messy fallback to fix the tipping bug.
+            if ($list_len == -1) {
+                addFunds($to_address, abs((int) $uSats));
+            }
+            
             for ($i = 0; $i < $list_len; $i++) {
                 if (gettype($to_address) == "array") {
                     $this_to_address = $to_address[$i];
