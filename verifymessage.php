@@ -1,8 +1,8 @@
 <?php
 /*
 verifymessage.php is heavily derived from
-https://github.com/scintill/php-bitcoin-signature-routines, and this is the
-license associated with that project:
+https://github.com/scintill/php-bitcoin-signature-routines . This file adopts
+the license associated with that project, shown here:
 
 Copyright (c) 2013 Joey Hewitt
 
@@ -27,6 +27,8 @@ THE SOFTWARE.
 
 // PHP 5.3.2 and GMP 4.2.0 (for larger base conversions), or higher, required
 
+include("base58.php");
+
 // configure the ECC lib
 if (extension_loaded('gmp')) {
 	define('USE_EXT', 'GMP');
@@ -43,56 +45,51 @@ $secp256k1_G = new Point($secp256k1,
 	'0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8',
 	'0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141');
 
-function validate_address($address) {
-	global $secp256k1_G;
+function is_address_valid($address) {
+  global $secp256k1_G;
 
-	// extract parameters
-        try {
-		$address = base58check_decode($address);
-        }
-	catch (Exception $e) {
-		return false;
-        }
-	if (strlen($address) != 21 || $address[0] != "\x0") {
-		return false;
-	}
+  try {
+    $address = base58check_decode($address);
+  }
+  catch (Exception $e) {
+    return false;
+  }
+  
+  if (strlen($address) != 21 || $address[0] != "\x0") return false;
 
-	return true;
+  return true;
 }
 
-function isMessageSignatureValid($address, $signature, $message) {
+function get_bitcoin_signable_hash($message) {
+    return hash('sha256', hash('sha256', "\x18Bitcoin Signed Message:\n" . numToVarIntString(strlen($message)).$message, true), true);
+}
+
+function get_address_from_signed_message($message, $sig) {
 	global $secp256k1_G;
 
-	// extract parameters
-	$address = base58check_decode($address);
-	if (strlen($address) != 21 || $address[0] != "\x0") {
-		throw new InvalidArgumentException('invalid Bitcoin address');
+	$sig = base64_decode($sig, true);
+    if ($sig === false) {
+		throw new InvalidArgumentException('invalid base64 address');
 	}
 
-	$signature = base64_decode($signature, true);
-	if ($signature === false) {
-		throw new InvalidArgumentException('invalid base64 signature');
-	}
-
-	if (strlen($signature) != 65) {
+	if (strlen($sig) != 65) {
 		throw new InvalidArgumentException('invalid signature length');
 	}
 
-	$recoveryFlags = ord($signature[0]) - 27;
+	$recoveryFlags = ord($sig[0]) - 27;
 	if ($recoveryFlags < 0 || $recoveryFlags > 7) {
 		throw new InvalidArgumentException('invalid signature type');
 	}
 	$isCompressed = ($recoveryFlags & 4) != 0;
 
 	// hash message, recover key
-	$messageHash = hash('sha256', hash('sha256', "\x18Bitcoin Signed Message:\n" . numToVarIntString(strlen($message)).$message, true), true);
-	$pubkey = recoverPubKey(bin2gmp(substr($signature, 1, 32)), bin2gmp(substr($signature, 33, 32)), bin2gmp($messageHash), $recoveryFlags, $secp256k1_G);
+	$messageHash = get_bitcoin_signable_hash($message);
+	$pubkey = recoverPubKey(bin2gmp(substr($sig, 1, 32)), bin2gmp(substr($sig, 33, 32)), bin2gmp($messageHash), $recoveryFlags, $secp256k1_G);
 	if ($pubkey === false) {
 		throw new InvalidArgumentException('unable to recover key');
 	}
 	$point = $pubkey->getPoint();
 
-	// see that the key we recovered is for the address given
 	if (!$isCompressed) {
 		$pubBinStr = "\x04" . str_pad(gmp2bin($point->getX()), 32, "\x00", STR_PAD_LEFT) .
 							  str_pad(gmp2bin($point->getY()), 32, "\x00", STR_PAD_LEFT);
@@ -100,9 +97,14 @@ function isMessageSignatureValid($address, $signature, $message) {
 		$pubBinStr =	(isBignumEven($point->getY()) ? "\x02" : "\x03") .
 							  str_pad(gmp2bin($point->getX()), 32, "\x00", STR_PAD_LEFT);
 	}
-	$derivedAddress = "\x00". hash('ripemd160', hash('sha256', $pubBinStr, true), true);
+	$binAddress = "\x00". hash('ripemd160', hash('sha256', $pubBinStr, true), true);
+    $derivedAddress = hash160ToAddress(encodeHex(gmp_strval(bin2gmp($binAddress))));
 
-	return $address === $derivedAddress;
+	return $derivedAddress;
+}
+
+function is_message_signature_valid($address, $message, $sig) {
+	return $address === get_address_from_signed_message($message, $sig);
 }
 
 function isBignumEven($bnStr) {
@@ -241,6 +243,4 @@ function __autoload($f) {
 		require_once $utilFile;
 	}
 }
-
-
 ?>

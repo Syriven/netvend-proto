@@ -47,8 +47,7 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
   $tx = $addr_info->txs[$i];
 
   if (!isset($tx->block_height)) {
-    echo "INSECURE; should wait for at least one confirmation";
-    #continue; // Must wait for at least one confirmation.
+    continue; // Must wait for at least one confirmation.
   }
   echo 1;
 
@@ -60,7 +59,7 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
 
   $txid = $tx->hash;
   $query = "SELECT txid FROM `processed_deposits` WHERE `txid` = '" . $txid . "'";
-  $result = $mysqli_link->query($query) or die(mysql_error());
+  $result = $mysqli_link->query($query) or die($mysqli_link->error);
   if ($result->num_rows > 0) {
     continue; //Already processed this deposit.
   }
@@ -76,11 +75,11 @@ for ($i=0; $i < sizeof($addr_info->txs); $i++) {
   echo 4;
   
   $query = "INSERT INTO `processed_deposits` VALUES ('".$txid."')";
-  $mysqli_link->query($query) or die($mysqli->error());
-  $query = "INSERT INTO `history` (address, command) VALUES ('-admin', '[\"d\",\"".$txid."\"]')";
-  $mysqli_link->query($query) or die($mysqli->error());
+  $mysqli_link->query($query) or die($mysqli_link->error);
+  $query = "INSERT INTO `history` (address, batch_type, audit_string) VALUES ('-', " . strval(BATCHTYPE_DEPOSIT) . ", $txid)";
+  $mysqli_link->query($query) or die($mysqli_link->error);
 
-  addFunds($input_addr, satoshis_to_usats($total_deposited));
+  add_funds($input_addr, satoshis_to_usats($total_deposited));
   $num_processed++;
   echo 5;
 }
